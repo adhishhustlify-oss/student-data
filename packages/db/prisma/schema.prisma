@@ -1,0 +1,117 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum BatchType { WORKSHOP FULL_TIME }
+enum BatchStatus { UPCOMING LIVE COMPLETED }
+enum StudentStatus { WORKSHOP FULL_TIME REFUND }
+enum RefundStatus { PENDING COMPLETED }
+enum UserRole { SUPER_ADMIN BATCH_ADMIN STAFF }
+enum CalendarEventType { CLASS HOLIDAY SPECIAL_SESSION }
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  role      UserRole
+  createdAt DateTime @default(now())
+  batches   Batch[]  @relation("BatchAdmin")
+}
+
+model Batch {
+  id              String          @id @default(cuid())
+  name            String
+  type            BatchType
+  status          BatchStatus
+  startDate       DateTime
+  endDate         DateTime
+  parentBatchId   String?
+  parentBatch     Batch?          @relation("BatchParent", fields: [parentBatchId], references: [id])
+  childBatches    Batch[]         @relation("BatchParent")
+  createdAt       DateTime        @default(now())
+  assignedAdminId String?
+  assignedAdmin   User?           @relation("BatchAdmin", fields: [assignedAdminId], references: [id])
+  students        Student[]
+  timetable       TimetableEntry[]
+  calendarEvents  CalendarEvent[]
+
+  @@index([parentBatchId])
+  @@index([type, status])
+  @@index([createdAt])
+  @@unique([parentBatchId, type])
+}
+
+model Student {
+  id             String        @id @default(cuid())
+  name           String
+  address        String
+  phone          String
+  guardianName   String
+  guardianPhone  String
+  idProofFront   String
+  idProofBack    String
+  photo          String?
+  status         StudentStatus @default(WORKSHOP)
+  batchId        String
+  batch          Batch         @relation(fields: [batchId], references: [id])
+  originalBatchId String
+  totalFee       Int
+  paidAmount     Int           @default(0)
+  createdAt      DateTime      @default(now())
+  convertedAt    DateTime?
+  payments       Payment[]
+  refunds        Refund[]
+
+  @@index([batchId, status])
+  @@index([createdAt])
+}
+
+model Payment {
+  id        String   @id @default(cuid())
+  studentId String
+  student   Student  @relation(fields: [studentId], references: [id])
+  amount    Int
+  date      DateTime @default(now())
+
+  @@index([studentId, date])
+  @@index([date])
+}
+
+model Refund {
+  id          String       @id @default(cuid())
+  studentId   String
+  student     Student      @relation(fields: [studentId], references: [id])
+  amount      Int
+  status      RefundStatus @default(PENDING)
+  createdAt   DateTime     @default(now())
+  completedAt DateTime?
+
+  @@index([status, createdAt])
+  @@index([createdAt])
+}
+
+model TimetableEntry {
+  id          String   @id @default(cuid())
+  batchId     String
+  batch       Batch    @relation(fields: [batchId], references: [id])
+  day         Int
+  startTime   String
+  endTime     String
+  sessionTitle String
+}
+
+model CalendarEvent {
+  id        String            @id @default(cuid())
+  batchId   String
+  batch     Batch             @relation(fields: [batchId], references: [id])
+  date      DateTime
+  type      CalendarEventType
+  title     String
+
+  @@index([date])
+}

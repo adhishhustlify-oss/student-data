@@ -1,0 +1,19 @@
+{
+  "name": "hustlify-student-batch-management",
+  "private": true,
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "dev": "npm-run-all --parallel dev:api dev:web",
+    "dev:api": "npm --workspace @hustlify/api run dev",
+    "dev:web": "npm --workspace @hustlify/web run dev",
+    "build": "npm-run-all build:db build:api build:web",
+    "build:db": "npm --workspace @hustlify/db run generate",
+    "build:api": "npm --workspace @hustlify/api run build",
+    "build:web": "npm --workspace @hustlify/web run build",
+    "db:migrate": "npm --workspace @hustlify/db run migrate:deploy",
+    "db:seed": "npm --workspace @hustlify/db run seed"
+  },
+  "devDependencies": {
+    "npm-run-all": "^4.1.5"
+  }
+}
